@@ -1,0 +1,21 @@
+{
+  "name": "taply",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "example": "gnoll start --config=webpack.example.config.js",
+	"build": "gnoll lib"
+  },
+  "author": "sunflowerdeath",
+  "license": "Unlicense",
+  "devDependencies": {
+    "eslint-config-gnoll": "0.0.3",
+    "gnoll": "^0.1.11",
+    "react": "^16.1.1",
+    "react-dom": "^16.1.1"
+  },
+  "dependencies": {
+    "prop-types": "^15.6.0"
+  }
+}
