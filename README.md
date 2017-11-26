@@ -6,7 +6,7 @@ It allows to handle pressed, hovered and focused states consistently
 across different input methods - mouse, touch and keyboard.
 
 - Fixes sticky hover and pressed state for touch
-- Prevents focus when using mouse or touch but still allows to focus using keyboard
+- Prevents focus when using mouse and touch, but still allows to focus using keyboard
 
 ## Install
 
@@ -21,8 +21,7 @@ const tappableElement = (
     <Taply
         onTap={() => console.log('Tap')}
         onChangeTapState={tapState => {
-            // tapState is an object of the following form:
-            // { isHovered, isPressed, isFocused }
+            // tapState is an object with keys 'isHovered', 'isPressed' and 'isFocused'
             this.setState(tapState)
         }}
     >
@@ -31,15 +30,13 @@ const tappableElement = (
 )
 
 // Any component can be a child
-const MyComponent = () => <div>Tap me</div>
-
 const tappableComponent = (
     <Taply {...props}>
-         <MyComponent />
+         <SomeComponent />
     </Taply>
 )
 
-// Or a function that returns element:
+// Also, you can use function that takes tapState and returns element
 const tappableFn = (
     <Taply {...props}>
         {tapState => <div style={{ color: tapState.hovered ? 'red' : 'black' }}>Tap me</div>}

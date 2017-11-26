@@ -6,50 +6,16 @@ const ENTER_KEYCODE = 13
 
 class Taply extends Component {
 	static propTypes = {
-		/** Single element. */
 		children: PropTypes.oneOfType([PropTypes.element, PropTypes.func]).isRequired,
-
-		/** Tap event handler. */
 		onTap: PropTypes.func,
-
-		/**
-		 * Handler of hovered and pressed states changes.
-		 *
-		 * `({hovered: boolean, pressed: boolean}) => void`
-		 */
 		onChangeTapState: PropTypes.func,
-
-		/**
-		 * `(tap: object) => void`
-		 */
 		onTapStart: PropTypes.func,
-
-		/**
-		 * `(tap: object) => void`
-		 */
 		onTapEnd: PropTypes.func,
-
-		/**
-		 * Focus event handler.
-		 *
-		 * `(event: object) => void`
-		 */
 		onFocus: PropTypes.func,
-
-		/**
-		 * Blur event handler.
-		 *
-		 * `(event: object) => void`
-		 */
 		onBlur: PropTypes.func,
-
-		/** Disables events handling. */
 		isDisabled: PropTypes.bool,
-
 		isFocusable: PropTypes.bool,
-
 		tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-
 		preventFocusOnTap: PropTypes.bool
 	}
 
