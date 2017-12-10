@@ -4,16 +4,31 @@ import PropTypes from 'prop-types'
 
 const ENTER_KEYCODE = 13
 
+const makeTouches = (event, prevTouches) =>
+	Array.from(event.touches).map(touch => {
+		const { clientX: x, clientY: y, identifier } = touch
+		const prevTouch = prevTouches.find(t => t.identifier === identifier)
+		if (prevTouch) {
+			return { ...prevTouch, x, y, dx: prevTouch.x0 - x, dy: prevTouch.y0 - y }
+		}
+		return { identifier, x, y, x0: x, y0: y, dx: 0, dy: 0 }
+	})
+
 class Taply extends Component {
 	static propTypes = {
 		children: PropTypes.oneOfType([PropTypes.element, PropTypes.func]).isRequired,
 		onTap: PropTypes.func,
 		onChangeTapState: PropTypes.func,
 		onTapStart: PropTypes.func,
+		onTapMove: PropTypes.func,
 		onTapEnd: PropTypes.func,
+		onPinchStart: PropTypes.func,
+		onPinchMove: PropTypes.func,
+		onPinchEnd: PropTypes.func,
 		onFocus: PropTypes.func,
 		onBlur: PropTypes.func,
 		isDisabled: PropTypes.bool,
+		isPinchable: PropTypes.bool,
 		isFocusable: PropTypes.bool,
 		tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 		preventFocusOnTap: PropTypes.bool
@@ -21,6 +36,7 @@ class Taply extends Component {
 
 	static defaultProps = {
 		isFocusable: true,
+		isPinchable: false,
 		tabIndex: 0,
 		preventFocusOnTap: true
 	}
@@ -33,6 +49,7 @@ class Taply extends Component {
 			mouseenter: this.onMouseEnter,
 			mouseleave: this.onMouseLeave,
 			mousedown: this.onMouseDown,
+			mousemove: this.onMouseMove,
 			touchstart: this.onTouchStart,
 			touchmove: this.onTouchMove,
 			touchend: this.onTouchEnd,
@@ -54,6 +71,8 @@ class Taply extends Component {
 			isFocused: false
 		}
 	}
+
+	touches = []
 
 	isTouched = false // eslint-disable-line react/sort-comp
 
@@ -106,7 +125,20 @@ class Taply extends Component {
 		if (event.button !== 0) return
 		document.addEventListener('mouseup', this.onMouseUp)
 		this.setTapState({ isPressed: true })
-		if (this.props.onTapStart) this.props.onTapStart(event)
+		if (this.props.onTapStart) {
+			const { clientX: x, clientY: y } = event
+			this.touches = [{ x, y, x0: x, y0: y }]
+			this.props.onTapStart(event, this.touches)
+		}
+	}
+
+	onMouseMove(event) {
+		if (this.state.tapState.isPressed && this.props.onTapMove) {
+			const { clientX: x, clientY: y } = event
+			const { x0, y0 } = this.touches[0]
+			this.touches = [{ x0, y0, x, y, dx: x0 - x, dy: y0 - y }]
+			this.props.onTapMove(event, this.touches)
+		}
 	}
 
 	onMouseUp(event) {
@@ -124,29 +156,55 @@ class Taply extends Component {
 			elem = elem.parentElement
 		}
 
+		this.touches = []
 		this.setTapState({ isPressed: false, isHovered: isOnButton })
-		if (this.props.onTapEnd) this.props.onTapEnd(event)
+		if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
 	}
 
 	onTouchStart(event) {
 		if (this.props.isDisabled) return
+
+		this.touches = makeTouches(event, this.touches)
 		this.shouldIgnoreMouseEvents = true
 		if (event.touches.length === 1) {
 			this.isTouched = true
 			this.initScrollDetection()
 			this.setTapState({ isHovered: true, isPressed: true })
-			if (this.props.onTapStart) this.props.onTapStart(event.touches[0])
+
+			if (this.props.onTapStart) this.props.onTapStart(event, this.touches)
+		} else if (event.touches.length === 2 && this.props.isPinchable) {
+			this.isPinching = true
+			if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
+			if (this.props.onPinchStart) this.props.onPinchStart(event, this.touches)
 		}
 	}
 
 	onTouchMove() {
 		if (this.props.isDisabled) return
-		if (this.detectScroll()) this.endTouch()
+
+		this.touches = makeTouches(event, this.touches)
+		if (this.isPinching) {
+			if (this.props.onPinchMove) this.props.onPinchMove(event, this.touches)
+		} else {
+			if (this.detectScroll()) {
+				this.endTouch()
+				return
+			}
+			if (this.props.onTapMove) this.props.onTapMove(event, this.touches)
+		}
 	}
 
 	onTouchEnd(event) {
 		if (this.props.isDisabled) return
-		if (event.touches.length === 0) this.endTouch(event)
+
+		this.touches = makeTouches(event, this.touches)
+		if (event.touches.length === 0) {
+			this.endTouch(event)
+		} else if (event.touches.length === 1 && this.isPinching) {
+			this.isPinching = false
+			if (this.props.onPinchEnd) this.props.onPinchEnd(event, this.touches)
+			if (this.props.onTapStart) this.props.onTapStart(event, this.touches)
+		}
 	}
 
 	onFocus(event) {
@@ -219,7 +277,7 @@ class Taply extends Component {
 	endTouch(event) {
 		this.isTouched = false
 		this.setTapState({ isHovered: false, isPressed: false })
-		if (this.props.onTapEnd) this.props.onTapEnd(event)
+		if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
 	}
 
 	initScrollDetection() {

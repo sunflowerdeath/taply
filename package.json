@@ -1,11 +1,11 @@
 {
   "name": "taply",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
     "example": "gnoll start --config=webpack.example.config.js",
-	"build": "gnoll lib"
+    "build": "gnoll lib"
   },
   "author": "sunflowerdeath",
   "license": "Unlicense",
