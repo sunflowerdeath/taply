@@ -9,7 +9,7 @@ const makeTouches = (event, prevTouches) =>
 		const { clientX: x, clientY: y, identifier } = touch
 		const prevTouch = prevTouches.find(t => t.identifier === identifier)
 		if (prevTouch) {
-			return { ...prevTouch, x, y, dx: prevTouch.x0 - x, dy: prevTouch.y0 - y }
+			return { ...prevTouch, x, y, dx: x - prevTouch.x0, dy: y - prevTouch.y0 }
 		}
 		return { identifier, x, y, x0: x, y0: y, dx: 0, dy: 0 }
 	})
@@ -136,7 +136,7 @@ class Taply extends Component {
 		if (this.state.tapState.isPressed && this.props.onTapMove) {
 			const { clientX: x, clientY: y } = event
 			const { x0, y0 } = this.touches[0]
-			this.touches = [{ x0, y0, x, y, dx: x0 - x, dy: y0 - y }]
+			this.touches = [{ x0, y0, x, y, dx: x - x0, dy: y - y0 }]
 			this.props.onTapMove(event, this.touches)
 		}
 	}
