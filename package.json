@@ -1,8 +1,8 @@
 {
   "name": "taply",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "scripts": {
     "example": "gnoll start --config=webpack.example.config.js",
     "build": "gnoll lib"
