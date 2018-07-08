@@ -38,28 +38,6 @@ const InlineButton = ({ isDisabled, onTap, children, isFocusable }) => (
 	</Taply>
 )
 
-const Link = ({ isDisabled, children, isFocusable }) => (
-	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
-		{({ isPressed, isHovered, isFocused }) => (
-			<a
-				href="https://google.com"
-				style={{
-					color: do {
-						if (isDisabled) '#999'
-						else if (isPressed) 'red'
-						else if (isHovered) 'blue'
-						else 'black'
-					},
-					outline: 'none',
-					boxShadow: isFocused ? '0 0 0 2px #0088ff' : 'none'
-				}}
-			>
-				{children}
-			</a>
-		)}
-	</Taply>
-)
-
 class StateButton extends Component {
 	state = { tapState: {} }
 
@@ -81,7 +59,27 @@ class StateButton extends Component {
 	}
 }
 
-const onTap = () => console.log('onTap')
+const Link = ({ isDisabled, children, isFocusable }) => (
+	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
+		{({ isPressed, isHovered, isFocused }) => (
+			<a
+				href="https://google.com"
+				style={{
+					color: do {
+						if (isDisabled) '#999'
+						else if (isPressed) 'red'
+						else if (isHovered) 'blue'
+						else 'black'
+					},
+					outline: 'none',
+					boxShadow: isFocused ? '0 0 0 2px #0088ff' : 'none'
+				}}
+			>
+				{children}
+			</a>
+		)}
+	</Taply>
+)
 
 class PinchExample extends Component {
 	constructor() {
@@ -145,8 +143,9 @@ class PinchExample extends Component {
 				<div style={{ width: 250, height: 250, background: '#ddd' }}>
 					{tap && 'TAP'}
 					{pinch && 'PINCH'}
-					{touches.map(touch => (
+					{touches.map((touch, index) => (
 						<div
+							key={index}
 							style={{
 								position: 'absolute',
 								top: touch.y - 30,
@@ -163,6 +162,8 @@ class PinchExample extends Component {
 		)
 	}
 }
+
+const onTap = () => console.log('onTap')
 
 const Example = () => (
 	<div>
@@ -184,7 +185,9 @@ const Example = () => (
 		</StateButton>
 		<br />
 		<br />
-		<Link>Link</Link> <Link isFocusable={false}>Not focusable</Link>
+		<Link>Link</Link>
+		<br />
+		<Link isFocusable={false}>Not focusable</Link>
 		<br />
 		<br />
 		<PinchExample />

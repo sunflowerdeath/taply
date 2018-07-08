@@ -45,11 +45,11 @@ class Taply extends Component {
 		super(props)
 
 		this.onMouseUp = this.onMouseUp.bind(this)
+		this.onMouseMove = this.onMouseMove.bind(this)
 		this.handlers = {
 			mouseenter: this.onMouseEnter,
 			mouseleave: this.onMouseLeave,
 			mousedown: this.onMouseDown,
-			mousemove: this.onMouseMove,
 			touchstart: this.onTouchStart,
 			touchmove: this.onTouchMove,
 			touchend: this.onTouchEnd,
@@ -124,6 +124,7 @@ class Taply extends Component {
 		}
 		if (event.button !== 0) return
 		document.addEventListener('mouseup', this.onMouseUp)
+		document.addEventListener('mousemove', this.onMouseMove)
 		this.setTapState({ isPressed: true })
 		if (this.props.onTapStart) {
 			const { clientX: x, clientY: y } = event
@@ -143,6 +144,8 @@ class Taply extends Component {
 
 	onMouseUp(event) {
 		document.removeEventListener('mouseup', this.onMouseUp)
+		document.addEventListener('mousemove', this.onMouseMove)
+
 		if (this.unmounted) return
 
 		const rootElem = ReactDOM.findDOMNode(this)
@@ -264,8 +267,7 @@ class Taply extends Component {
 		if (isDisabled) elem.setAttribute('disabled', 'disabled')
 		else elem.removeAttribute('disabled')
 
-		if (isFocusable && !isDisabled) elem.setAttribute('tabindex', tabIndex)
-		else elem.removeAttribute('tabindex')
+		elem.setAttribute('tabindex', isFocusable && !isDisabled ? tabIndex : '-1')
 	}
 
 	bindHandlers(elem) {
