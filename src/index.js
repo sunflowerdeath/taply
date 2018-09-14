@@ -5,7 +5,7 @@ import PropTypes from 'prop-types'
 const ENTER_KEYCODE = 13
 
 const makeTouches = (event, prevTouches) =>
-	Array.from(event.touches).map(touch => {
+	Array.from(event.targetTouches).map(touch => {
 		const { clientX: x, clientY: y, identifier } = touch
 		const prevTouch = prevTouches.find(t => t.identifier === identifier)
 		if (prevTouch) {
@@ -16,7 +16,8 @@ const makeTouches = (event, prevTouches) =>
 
 class Taply extends Component {
 	static propTypes = {
-		children: PropTypes.oneOfType([PropTypes.element, PropTypes.func]).isRequired,
+		children: PropTypes.oneOfType([PropTypes.element, PropTypes.func])
+			.isRequired,
 		onTap: PropTypes.func,
 		onChangeTapState: PropTypes.func,
 		onTapStart: PropTypes.func,
@@ -72,7 +73,7 @@ class Taply extends Component {
 		}
 	}
 
-	touches = []
+	touches = [] // eslint-disable-line react/sort-comp
 
 	isTouched = false // eslint-disable-line react/sort-comp
 
@@ -233,11 +234,11 @@ class Taply extends Component {
 
 		if (isFocused && event.keyCode === ENTER_KEYCODE) {
 			this.setTapState({ isPressed: true })
-			if (onTapStart) onTapStart()
-			if (onTap) onTap()
+			if (onTapStart) onTapStart(event)
+			if (onTap) onTap(event)
 			setTimeout(() => {
 				this.setTapState({ isPressed: false })
-				if (onTapEnd) onTapEnd()
+				if (onTapEnd) onTapEnd(event)
 			}, 150)
 		}
 	}
@@ -279,7 +280,11 @@ class Taply extends Component {
 	endTouch(event) {
 		this.isTouched = false
 		this.setTapState({ isHovered: false, isPressed: false })
-		if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
+		if (this.isPinching) {
+			if (this.props.onPinchEnd) this.props.onPinchEnd(event, this.touches)
+		} else if (this.props.onTapEnd) {
+			this.props.onTapEnd(event, this.touches)
+		}
 	}
 
 	initScrollDetection() {
@@ -317,7 +322,9 @@ class Taply extends Component {
 
 	render() {
 		const { children } = this.props
-		return typeof children === 'function' ? children(this.state.tapState) : children
+		return typeof children === 'function'
+			? children(this.state.tapState)
+			: children
 	}
 }
 

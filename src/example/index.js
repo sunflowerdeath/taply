@@ -59,11 +59,11 @@ class StateButton extends Component {
 	}
 }
 
-const Link = ({ isDisabled, children, isFocusable }) => (
+const Link = ({ isDisabled, children, isFocusable, href, onTap }) => (
 	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
 		{({ isPressed, isHovered, isFocused }) => (
 			<a
-				href="https://google.com"
+				href={href}
 				style={{
 					color: do {
 						if (isDisabled) '#999'
@@ -79,6 +79,18 @@ const Link = ({ isDisabled, children, isFocusable }) => (
 			</a>
 		)}
 	</Taply>
+)
+
+const RouterLink = ({ isDisabled, children, isFocusable }) => (
+	<Link
+		href={`http://localhost:1337/${new Date().getTime()}`}
+		onTap={event => {
+			event.preventDefault()
+			history.pushState({}, '', new Date().getTime())
+		}}
+	>
+		{children}
+	</Link>
 )
 
 class PinchExample extends Component {
@@ -123,9 +135,9 @@ class PinchExample extends Component {
 		this.setState({ touches })
 	}
 
-	onPinchEnd() {
+	onPinchEnd(event, touches) {
 		console.log('pinch end')
-		this.setState({ pinch: false })
+		this.setState({ pinch: false, touches })
 	}
 
 	render() {
@@ -140,7 +152,15 @@ class PinchExample extends Component {
 				onPinchMove={this.onPinchMove}
 				onPinchEnd={this.onPinchEnd}
 			>
-				<div style={{ width: 250, height: 250, background: '#ddd' }}>
+				<div
+					style={{
+						width: 250,
+						height: 250,
+						background: '#ddd',
+						WebkitUserSelect: 'none',
+						WebkitTapHighlightColor: 'transparent'
+					}}
+				>
 					{tap && 'TAP'}
 					{pinch && 'PINCH'}
 					{touches.map((touch, index) => (
@@ -185,9 +205,15 @@ const Example = () => (
 		</StateButton>
 		<br />
 		<br />
-		<Link>Link</Link>
+		<Link href="https://google.com" onTap={onTap}>
+			Link
+		</Link>
 		<br />
-		<Link isFocusable={false}>Not focusable</Link>
+		<Link href="https://google.com" onTap={onTap} isFocusable={false}>
+			Not focusable
+		</Link>
+		<br />
+		<RouterLink>Router Link</RouterLink>
 		<br />
 		<br />
 		<PinchExample />
