@@ -29,7 +29,7 @@ const tappableElement = (
     </Taply>
 )
 
-// Any component can be a child
+// Any component can be a child (React components should forward ref to inner DOM-element)
 const tappableComponent = (
     <Taply {...props}>
          <SomeComponent />
@@ -39,7 +39,9 @@ const tappableComponent = (
 // Also, you can use function that takes tapState and returns element
 const tappableFn = (
     <Taply {...props}>
-        {tapState => <div style={{ color: tapState.hovered ? 'red' : 'black' }}>Tap me</div>}
+        {(tapState, ref) => (
+            <div style={{ color: tapState.hovered ? 'red' : 'black' }} ref={ref}>Tap me</div>
+        )}
     </Taply>
 )
 ```
@@ -47,7 +49,7 @@ const tappableFn = (
 ## Props
 
 ### children
-Type: `element|(tapState: object) => element`
+Type: `element|(tapState: object, ref) => element`
 
 Tap state is an object with following properties: `isHovered`, `isPressed` and `isFocused`.
 
