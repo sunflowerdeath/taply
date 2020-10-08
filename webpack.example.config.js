@@ -30,7 +30,7 @@ module.exports = {
 				exclude: [/node_modules/],
 				loader: 'babel-loader',
 				options: {
-					presets: ['env', 'stage-0', 'react']
+					presets: [require('gnoll/config/babelStage0.js')]
 				}
 			}
 		]

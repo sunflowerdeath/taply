@@ -11,7 +11,7 @@
   "license": "Unlicense",
   "devDependencies": {
     "eslint-config-gnoll": "0.0.3",
-    "gnoll": "^0.1.11",
+    "gnoll": "^0.7.0-alpha.5",
     "react": "^16.8",
     "react-dom": "^16.8"
   },
