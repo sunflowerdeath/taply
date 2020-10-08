@@ -1,4 +1,4 @@
-import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
+import { useRef, useEffect, useImperativeHandle, forwardRef, cloneElement } from 'react'
 import PropTypes from 'prop-types'
 
 import { useIt } from './utils'
@@ -269,7 +269,12 @@ const Taply = forwardRef((props, ref) => {
 		[]
 	)
 
-	return props.children(it.state.tapState, elemRef)
+	if (typeof props.children === 'function') {
+		return props.children(it.state.tapState, elemRef)
+	} else {
+        // TODO preserve original ref
+		return cloneElement(props.children, { ref: elemRef })
+	}
 })
 
 Taply.propTypes = {

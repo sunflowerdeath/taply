@@ -49,11 +49,9 @@ const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
 			isDisabled={isDisabled}
 			isFocusable={isFocusable}
 		>
-			{(tapState, ref) => (
-				<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>
-					{children}
-				</div>
-			)}
+            <div style={getButtonStyle({ isDisabled, tapState })}>
+                {children}
+            </div>
 		</Taply>
 	)
 }
