@@ -1,6 +1,6 @@
 {
   "name": "taply",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -12,14 +12,14 @@
   "devDependencies": {
     "eslint-config-gnoll": "0.0.3",
     "gnoll": "^0.1.11",
-    "react": "^16.1.1",
-    "react-dom": "^16.1.1"
+    "react": "^16.8",
+    "react-dom": "^16.8"
   },
   "dependencies": {
     "prop-types": "^15.6.0"
   },
   "peerDependencies": {
-    "react": "^16.1.1",
-    "react-dom": "^16.1.1"
+    "react": "^16.8",
+    "react-dom": "^16.8"
   }
 }

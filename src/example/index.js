@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 
-import Taply from '../index'
+import Taply from '../new'
 
 const getButtonStyle = ({ tapState, isDisabled }) => {
 	const style = {
@@ -32,37 +32,37 @@ const getButtonStyle = ({ tapState, isDisabled }) => {
 
 const InlineButton = ({ isDisabled, onTap, children, isFocusable }) => (
 	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
-		{tapState => (
-			<div style={getButtonStyle({ isDisabled, tapState })}>{children}</div>
+		{(tapState, ref) => (
+			<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>
+				{children}
+			</div>
 		)}
 	</Taply>
 )
 
-class StateButton extends Component {
-	state = { tapState: {} }
-
-	render() {
-		const { isDisabled, onTap, children, isFocusable } = this.props
-
-		return (
-			<Taply
-				onTap={onTap}
-				onChangeTapState={tapState => this.setState({ tapState })}
-				isDisabled={isDisabled}
-				isFocusable={isFocusable}
-			>
-				{tapState => (
-					<div style={getButtonStyle({ isDisabled, tapState })}>{children}</div>
-				)}
-			</Taply>
-		)
-	}
+const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
+	const [tapState, setTapState] = useState({})
+	return (
+		<Taply
+			onTap={onTap}
+			onChangeTapState={setTapState}
+			isDisabled={isDisabled}
+			isFocusable={isFocusable}
+		>
+			{(tapState, ref) => (
+				<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>
+					{children}
+				</div>
+			)}
+		</Taply>
+	)
 }
 
 const Link = ({ isDisabled, children, isFocusable, href, onTap }) => (
 	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
-		{({ isPressed, isHovered, isFocused }) => (
+		{({ isPressed, isHovered, isFocused }, ref) => (
 			<a
+				ref={ref}
 				href={href}
 				style={{
 					color: do {
@@ -93,6 +93,7 @@ const RouterLink = ({ isDisabled, children, isFocusable }) => (
 	</Link>
 )
 
+/*
 class PinchExample extends Component {
 	constructor() {
 		super()
@@ -182,6 +183,7 @@ class PinchExample extends Component {
 		)
 	}
 }
+*/
 
 const onTap = () => console.log('onTap')
 
@@ -205,6 +207,24 @@ const Example = () => (
 		</StateButton>
 		<br />
 		<br />
+		<div
+			style={{
+				overflow: 'scroll',
+				width: 200,
+				height: 200,
+				border: '1px solid grey',
+				padding: 10
+			}}
+		>
+			<div style={{ height: 500 }}>
+				<InlineButton onTap={onTap}>Inline button</InlineButton>
+				<br />
+				<br />
+				<InlineButton onTap={onTap}>Inline button</InlineButton>
+			</div>
+		</div>
+		<br />
+		<br />
 		<Link href="https://google.com" onTap={onTap}>
 			Link
 		</Link>
@@ -214,9 +234,11 @@ const Example = () => (
 		</Link>
 		<br />
 		<RouterLink>Router Link</RouterLink>
+		{/*
 		<br />
 		<br />
 		<PinchExample />
+		*/}
 	</div>
 )
 
