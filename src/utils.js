@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, cloneElement } from 'react'
 
 const useLastValue = value => {
 	const ref = useRef(value)
@@ -42,4 +42,24 @@ const useIt = ({ initialCtx, props, initialState }) => {
 	return ctx
 }
 
-export { useFirstRender, useLastValue, useIt }
+const mergeRefs = (...refs) => (value) => {
+    refs.forEach((ref) => {
+        if (ref == null) return
+        if (typeof ref === 'function') {
+            ref(value)
+            return
+        }
+        try {
+            ref.current = value
+        } catch (e) {}
+    })
+}
+
+const cloneElementWithRef = (elem, props, ...children) =>
+    cloneElement(
+        elem,
+        { ...props, ref: mergeRefs(props.ref, elem.ref) },
+        ...children
+    )
+
+export { useFirstRender, useLastValue, useIt, mergeRefs, cloneElementWithRef }

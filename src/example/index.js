@@ -1,7 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 
 import Taply from '../new'
+
+const style = document.createElement('style')
+style.innerText = `
+.test:hover {color:blue}
+.test:active {color:red}
+`
+document.head.appendChild(style)
 
 const getButtonStyle = ({ tapState, isDisabled }) => {
 	const style = {
@@ -42,6 +49,7 @@ const InlineButton = ({ isDisabled, onTap, children, isFocusable }) => (
 
 const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
 	const [tapState, setTapState] = useState({})
+	const ref = (ref) => console.log('ref: ', ref)
 	return (
 		<Taply
 			onTap={onTap}
@@ -49,33 +57,30 @@ const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
 			isDisabled={isDisabled}
 			isFocusable={isFocusable}
 		>
-            <div style={getButtonStyle({ isDisabled, tapState })}>
-                {children}
-            </div>
+			<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>{children}</div>
 		</Taply>
 	)
 }
 
 const Link = ({ isDisabled, children, isFocusable, href, onTap }) => (
 	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
-		{({ isPressed, isHovered, isFocused }, ref) => (
-			<a
+		{({ isPressed, isHovered, isFocused }, ref) => {
+		    let color = 'black'
+		    if (isDisabled) { color = '#999' }
+		    else if (isPressed) color='red'
+		    else if (isHovered) color='blue'
+			return <a
 				ref={ref}
 				href={href}
 				style={{
-					color: do {
-						if (isDisabled) '#999'
-						else if (isPressed) 'red'
-						else if (isHovered) 'blue'
-						else 'black'
-					},
+					color,
 					outline: 'none',
 					boxShadow: isFocused ? '0 0 0 2px #0088ff' : 'none'
 				}}
 			>
 				{children}
 			</a>
-		)}
+		}}
 	</Taply>
 )
 
@@ -219,6 +224,11 @@ const Example = () => (
 				<br />
 				<br />
 				<InlineButton onTap={onTap}>Inline button</InlineButton>
+				<br />
+				<br />
+				<div className="test" tabIndex="0" onClick={onTap}>
+					Usual button
+				</div>
 			</div>
 		</div>
 		<br />

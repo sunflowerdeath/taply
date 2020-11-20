@@ -1,7 +1,7 @@
-import { useRef, useEffect, useImperativeHandle, forwardRef, cloneElement } from 'react'
+import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import PropTypes from 'prop-types'
 
-import { useIt } from './utils'
+import { useIt, cloneElementWithRef } from './utils'
 
 const ENTER_KEYCODE = 13
 
@@ -18,6 +18,7 @@ const makeTouches = (event, prevTouches) =>
 const setTapState = (it, tapState) => {
 	if (tapState.isPressed && (it.props.preventFocusOnTap || it.isTouched)) {
 		it.shouldPreventFocus = true
+		setTimeout(() => (it.shouldPreventFocus = false))
 	}
 	const nextTapState = { ...it.state.tapState, ...tapState }
 	it.setState({ tapState: nextTapState })
@@ -139,7 +140,6 @@ const handlers = {
 			if (it.props.onPinchStart) it.props.onPinchStart(event, it.touches)
 		}
 	},
-
 	touchmove(event, it) {
 		if (it.props.isDisabled) return
 
@@ -154,7 +154,6 @@ const handlers = {
 			if (it.props.onTapMove) it.props.onTapMove(event, it.touches)
 		}
 	},
-
 	touchend(event, it) {
 		if (it.props.isDisabled) return
 
@@ -167,7 +166,6 @@ const handlers = {
 			if (it.props.onTapStart) it.props.onTapStart(event, it.touches)
 		}
 	},
-
 	focus(event, it) {
 		if (it.props.isDisabled) return
 		if (!it.props.isFocusable || it.shouldPreventFocus) {
@@ -178,13 +176,11 @@ const handlers = {
 			if (it.props.onFocus) it.props.onFocus(event)
 		}
 	},
-
 	blur(event, it) {
 		if (it.props.isDisabled) return
 		setTapState(it, { isFocused: false })
 		if (it.props.onBlur) it.props.onBlur(event)
 	},
-
 	keydown(event, it) {
 		const { onTap, onTapStart, onTapEnd } = it.props
 		const { isFocused } = it.state.tapState
@@ -199,7 +195,6 @@ const handlers = {
 			}, 150)
 		}
 	},
-
 	click(event, it) {
 		if (it.props.isDisabled) return
 		if (it.props.onTap) it.props.onTap(event)
@@ -272,8 +267,7 @@ const Taply = forwardRef((props, ref) => {
 	if (typeof props.children === 'function') {
 		return props.children(it.state.tapState, elemRef)
 	} else {
-        // TODO preserve original ref
-		return cloneElement(props.children, { ref: elemRef })
+		return cloneElementWithRef(props.children, { ref: elemRef })
 	}
 })
 
@@ -293,14 +287,14 @@ Taply.propTypes = {
 	isPinchable: PropTypes.bool,
 	isFocusable: PropTypes.bool,
 	tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-	preventFocusOnTap: PropTypes.bool
+	preventFocusOnTap: PropTypes.bool,
 }
 
 Taply.defaultProps = {
 	isFocusable: true,
 	isPinchable: false,
 	tabIndex: 0,
-	preventFocusOnTap: true
+	preventFocusOnTap: true,
 }
 
 export default Taply
