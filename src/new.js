@@ -258,9 +258,11 @@ const Taply = forwardRef((props, ref) => {
 					setListeners(it)
 					setAttributes(it)
 				}
+			} else {
+			    setAttributes(it)
 			}
 		},
-		[elemRef.current]
+		[elemRef.current, props.isDisabled]
 	)
 
 	useImperativeHandle(
