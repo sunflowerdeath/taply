@@ -18,7 +18,16 @@ const makeTouches = (event, prevTouches) =>
 const setTapState = (it, tapState) => {
 	if (tapState.isPressed && (it.props.preventFocusOnTap || it.isTouched)) {
 		it.shouldPreventFocus = true
-		setTimeout(() => (it.shouldPreventFocus = false))
+        // On desktop we dont want to keep preventing if the focus event not 
+        // happening for some reason, because `Tab` button should work.
+        // On mobile platforms focus event is very unpredictable, so once element 
+        // is touched, it will keep preventing next focus event whenever it will
+        // happen.
+		if (!it.isTouched) {
+		    setTimeout(() => {
+		        it.shouldPreventFocus = false
+		    })		
+        }
 	}
 	const nextTapState = { ...it.state.tapState, ...tapState }
 	it.setState({ tapState: nextTapState })
