@@ -18,16 +18,16 @@ const makeTouches = (event, prevTouches) =>
 const setTapState = (it, tapState) => {
 	if (tapState.isPressed && (it.props.preventFocusOnTap || it.isTouched)) {
 		it.shouldPreventFocus = true
-        // On desktop we dont want to keep preventing if the focus event not 
-        // happening for some reason, because `Tab` button should work.
-        // On mobile platforms focus event is very unpredictable, so once element 
-        // is touched, it will keep preventing next focus event whenever it will
-        // happen.
+		// On desktop we dont want to keep preventing if the focus event not
+		// happening for some reason, because `Tab` button should work.
+		// On mobile platforms focus event is very unpredictable, so once element
+		// is touched, it will keep preventing next focus event whenever it will
+		// happen.
 		if (!it.isTouched) {
-		    setTimeout(() => {
-		        it.shouldPreventFocus = false
-		    })		
-        }
+			setTimeout(() => {
+				it.shouldPreventFocus = false
+			})
+		}
 	}
 	const nextTapState = { ...it.state.tapState, ...tapState }
 	it.setState({ tapState: nextTapState })
@@ -205,6 +205,7 @@ const handlers = {
 		}
 	},
 	click(event, it) {
+		if (it.elem.tagName === 'BUTTON' && event.detail === 0) return
 		if (it.props.isDisabled) return
 		if (it.props.onTap) it.props.onTap(event)
 	}
@@ -259,7 +260,7 @@ const Taply = forwardRef((props, ref) => {
 					setAttributes(it)
 				}
 			} else {
-			    setAttributes(it)
+				setAttributes(it)
 			}
 		},
 		[elemRef.current, props.isDisabled]
@@ -298,14 +299,14 @@ Taply.propTypes = {
 	isPinchable: PropTypes.bool,
 	isFocusable: PropTypes.bool,
 	tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-	preventFocusOnTap: PropTypes.bool,
+	preventFocusOnTap: PropTypes.bool
 }
 
 Taply.defaultProps = {
 	isFocusable: true,
 	isPinchable: false,
 	tabIndex: 0,
-	preventFocusOnTap: true,
+	preventFocusOnTap: true
 }
 
 export default Taply
