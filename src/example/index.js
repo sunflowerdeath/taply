@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import ReactDOM from 'react-dom'
 
-import Taply from '../new'
+import Taply from '../'
 
 const style = document.createElement('style')
 style.innerText = `
@@ -57,7 +57,9 @@ const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
 			isDisabled={isDisabled}
 			isFocusable={isFocusable}
 		>
-			<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>{children}</div>
+			<div style={getButtonStyle({ isDisabled, tapState })} ref={ref}>
+				{children}
+			</div>
 		</Taply>
 	)
 }
@@ -65,21 +67,24 @@ const StateButton = ({ isDisabled, isFocusable, onTap, children }) => {
 const Link = ({ isDisabled, children, isFocusable, href, onTap }) => (
 	<Taply onTap={onTap} isDisabled={isDisabled} isFocusable={isFocusable}>
 		{({ isPressed, isHovered, isFocused }, ref) => {
-		    let color = 'black'
-		    if (isDisabled) { color = '#999' }
-		    else if (isPressed) color='red'
-		    else if (isHovered) color='blue'
-			return <a
-				ref={ref}
-				href={href}
-				style={{
-					color,
-					outline: 'none',
-					boxShadow: isFocused ? '0 0 0 2px #0088ff' : 'none'
-				}}
-			>
-				{children}
-			</a>
+			let color = 'black'
+			if (isDisabled) {
+				color = '#999'
+			} else if (isPressed) color = 'red'
+			else if (isHovered) color = 'blue'
+			return (
+				<a
+					ref={ref}
+					href={href}
+					style={{
+						color,
+						outline: 'none',
+						boxShadow: isFocused ? '0 0 0 2px #0088ff' : 'none'
+					}}
+				>
+					{children}
+				</a>
+			)
 		}}
 	</Taply>
 )
@@ -87,7 +92,7 @@ const Link = ({ isDisabled, children, isFocusable, href, onTap }) => (
 const RouterLink = ({ isDisabled, children, isFocusable }) => (
 	<Link
 		href={`http://localhost:1337/${new Date().getTime()}`}
-		onTap={event => {
+		onTap={(event) => {
 			event.preventDefault()
 			history.pushState({}, '', new Date().getTime())
 		}}

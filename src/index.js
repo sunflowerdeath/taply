@@ -1,331 +1,310 @@
-import { Component } from 'react'
-import ReactDOM from 'react-dom'
+import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react'
 import PropTypes from 'prop-types'
+
+import { useIt, cloneElementWithRef } from './utils'
 
 const ENTER_KEYCODE = 13
 
 const makeTouches = (event, prevTouches) =>
-	Array.from(event.targetTouches).map(touch => {
+	Array.from(event.targetTouches).map((touch) => {
 		const { clientX: x, clientY: y, identifier } = touch
-		const prevTouch = prevTouches.find(t => t.identifier === identifier)
+		const prevTouch = prevTouches.find((t) => t.identifier === identifier)
 		if (prevTouch) {
 			return { ...prevTouch, x, y, dx: x - prevTouch.x0, dy: y - prevTouch.y0 }
 		}
 		return { identifier, x, y, x0: x, y0: y, dx: 0, dy: 0 }
 	})
 
-class Taply extends Component {
-	static propTypes = {
-		children: PropTypes.oneOfType([PropTypes.element, PropTypes.func])
-			.isRequired,
-		onTap: PropTypes.func,
-		onChangeTapState: PropTypes.func,
-		onTapStart: PropTypes.func,
-		onTapMove: PropTypes.func,
-		onTapEnd: PropTypes.func,
-		onPinchStart: PropTypes.func,
-		onPinchMove: PropTypes.func,
-		onPinchEnd: PropTypes.func,
-		onFocus: PropTypes.func,
-		onBlur: PropTypes.func,
-		isDisabled: PropTypes.bool,
-		isPinchable: PropTypes.bool,
-		isFocusable: PropTypes.bool,
-		tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-		preventFocusOnTap: PropTypes.bool
-	}
-
-	static defaultProps = {
-		isFocusable: true,
-		isPinchable: false,
-		tabIndex: 0,
-		preventFocusOnTap: true
-	}
-
-	constructor(props) {
-		super(props)
-
-		this.onMouseUp = this.onMouseUp.bind(this)
-		this.onMouseMove = this.onMouseMove.bind(this)
-		this.handlers = {
-			mouseenter: this.onMouseEnter,
-			mouseleave: this.onMouseLeave,
-			mousedown: this.onMouseDown,
-			touchstart: this.onTouchStart,
-			touchmove: this.onTouchMove,
-			touchend: this.onTouchEnd,
-			click: this.onClick,
-			focus: this.onFocus,
-			blur: this.onBlur,
-			keydown: this.onKeyDown,
-			dragstart: this.onDragStart
-		}
-		Object.entries(this.handlers).forEach(([name, handler]) => {
-			this.handlers[name] = handler.bind(this)
-		})
-	}
-
-	state = {
-		tapState: {
-			isPressed: false,
-			isHovered: false,
-			isFocused: false
+const setTapState = (it, tapState) => {
+	if (tapState.isPressed && (it.props.preventFocusOnTap || it.isTouched)) {
+		it.shouldPreventFocus = true
+		// On desktop we dont want to keep preventing if the focus event not
+		// happening for some reason, because `Tab` button should work.
+		// On mobile platforms focus event is very unpredictable, so once element
+		// is touched, it will keep preventing next focus event whenever it will
+		// happen.
+		if (!it.isTouched) {
+			setTimeout(() => {
+				it.shouldPreventFocus = false
+			})
 		}
 	}
+	const nextTapState = { ...it.state.tapState, ...tapState }
+	it.setState({ tapState: nextTapState })
+	if (it.props.onChangeTapState) it.props.onChangeTapState(nextTapState)
+}
 
-	touches = [] // eslint-disable-line react/sort-comp
+const onMouseUp = (event, it) => {
+	document.removeEventListener('mouseup', it.mouseUpListener)
+	document.addEventListener('mousemove', it.mouseMoveListener)
 
-	isTouched = false // eslint-disable-line react/sort-comp
+	if (it.unmounted) return
 
-	// Focus is prevented on click when `preventFocusOnTap` if `true`
-	// and always prevented on touch
-	shouldPreventFocus = false
-
-	// Ignore mouse events on touching because mousedown happens after touchend
-	shouldIgnoreMouseEvents = false
-
-	componentDidMount() {
-		this.elem = ReactDOM.findDOMNode(this)
-		this.bindHandlers(this.elem)
-		this.setAttributes(this.elem)
-	}
-
-	componentDidUpdate(prevProps) {
-		const elem = ReactDOM.findDOMNode(this)
-		if (this.elem !== elem) {
-			this.bindHandlers(elem)
-			this.setAttributes(elem)
-			this.elem = elem
-		} else if (this.props.isDisabled !== prevProps.isDisabled) {
-			this.setAttributes(this.elem)
+	let isOnButton
+	let elem = event.target
+	while (elem) {
+		if (elem === it.elem) {
+			isOnButton = true
+			break
 		}
+		elem = elem.parentElement
 	}
 
-	componentWillUnmount() {
-		this.unmounted = false
-	}
+	it.touches = []
+	setTapState(it, { isPressed: false, isHovered: isOnButton })
+	if (it.props.onTapEnd) it.props.onTapEnd(event, it.touches)
+}
 
-	onMouseEnter() {
-		if (this.props.isDisabled) return
-		if (this.shouldIgnoreMouseEvents) return
-		this.setTapState({ isHovered: true })
+const onMouseMove = (event, it) => {
+	if (it.state.tapState.isPressed && it.props.onTapMove) {
+		const { clientX: x, clientY: y } = event
+		const { x0, y0 } = it.touches[0]
+		it.touches = [{ x0, y0, x, y, dx: x - x0, dy: y - y0 }]
+		it.props.onTapMove(event, it.touches)
 	}
+}
 
-	onMouseLeave() {
-		if (this.props.isDisabled) return
-		if (this.shouldIgnoreMouseEvents) return
-		this.setTapState({ isHovered: false })
+const initScrollDetection = (it) => {
+	it.scrollPos = { top: 0, left: 0 }
+	it.scrollParents = []
+	let node = it.elem
+	while (node) {
+		if (
+			node.scrollHeight > node.offsetHeight ||
+			node.scrollWidth > node.offsetWidth
+		) {
+			it.scrollParents.push(node)
+			it.scrollPos.top += node.scrollTop
+			it.scrollPos.left += node.scrollLeft
+		}
+		node = node.parentNode
 	}
+}
 
-	onMouseDown(event) {
-		if (this.props.isDisabled) return
-		if (this.shouldIgnoreMouseEvents) {
-			this.shouldIgnoreMouseEvents = false
+const detectScroll = (it) => {
+	const currentScrollPos = { top: 0, left: 0 }
+	it.scrollParents.forEach((elem) => {
+		currentScrollPos.top += elem.scrollTop
+		currentScrollPos.left += elem.scrollLeft
+	})
+	return (
+		currentScrollPos.top !== it.scrollPos.top ||
+		currentScrollPos.left !== it.scrollPos.left
+	)
+}
+
+const endTouch = (it, event) => {
+	it.isTouched = false
+	setTapState(it, { isHovered: false, isPressed: false })
+	if (it.isPinching) {
+		if (it.props.onPinchEnd) it.props.onPinchEnd(event, it.touches)
+	} else if (it.props.onTapEnd) {
+		it.props.onTapEnd(event, it.touches)
+	}
+}
+
+const handlers = {
+	mouseenter(event, it) {
+		if (it.props.isDisabled) return
+		if (it.shouldIgnoreMouseEvents) return
+		setTapState(it, { isHovered: true })
+	},
+	mouseleave(event, it) {
+		if (it.props.isDisabled) return
+		if (it.shouldIgnoreMouseEvents) return
+		setTapState(it, { isHovered: false })
+	},
+	mousedown(event, it) {
+		if (it.props.isDisabled) return
+		if (it.shouldIgnoreMouseEvents) {
+			it.shouldIgnoreMouseEvents = false
 			return
 		}
 		if (event.button !== 0) return
-		document.addEventListener('mouseup', this.onMouseUp)
-		document.addEventListener('mousemove', this.onMouseMove)
-		this.setTapState({ isPressed: true })
-		if (this.props.onTapStart) {
+		it.mouseUpListener = (e) => onMouseUp(e, it)
+		it.mouseMoveListener = (e) => onMouseMove(e, it)
+		document.addEventListener('mouseup', it.mouseUpListener)
+		document.addEventListener('mousemove', it.mouseMoveListener)
+		setTapState(it, { isPressed: true })
+		if (it.props.onTapStart) {
 			const { clientX: x, clientY: y } = event
-			this.touches = [{ x, y, x0: x, y0: y }]
-			this.props.onTapStart(event, this.touches)
+			it.touches = [{ x, y, x0: x, y0: y }]
+			it.props.onTapStart(event, it.touches)
 		}
-	}
+	},
+	touchstart(event, it) {
+		if (it.props.isDisabled) return
 
-	onMouseMove(event) {
-		if (this.state.tapState.isPressed && this.props.onTapMove) {
-			const { clientX: x, clientY: y } = event
-			const { x0, y0 } = this.touches[0]
-			this.touches = [{ x0, y0, x, y, dx: x - x0, dy: y - y0 }]
-			this.props.onTapMove(event, this.touches)
-		}
-	}
-
-	onMouseUp(event) {
-		document.removeEventListener('mouseup', this.onMouseUp)
-		document.addEventListener('mousemove', this.onMouseMove)
-
-		if (this.unmounted) return
-
-		const rootElem = ReactDOM.findDOMNode(this)
-		let isOnButton
-		let elem = event.target
-		while (elem) {
-			if (elem === rootElem) {
-				isOnButton = true
-				break
-			}
-			elem = elem.parentElement
-		}
-
-		this.touches = []
-		this.setTapState({ isPressed: false, isHovered: isOnButton })
-		if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
-	}
-
-	onTouchStart(event) {
-		if (this.props.isDisabled) return
-
-		this.touches = makeTouches(event, this.touches)
-		this.shouldIgnoreMouseEvents = true
+		it.touches = makeTouches(event, it.touches)
+		it.shouldIgnoreMouseEvents = true
 		if (event.touches.length === 1) {
-			this.isTouched = true
-			this.initScrollDetection()
-			this.setTapState({ isHovered: true, isPressed: true })
+			it.isTouched = true
+			initScrollDetection(it)
+			setTapState(it, { isHovered: true, isPressed: true })
 
-			if (this.props.onTapStart) this.props.onTapStart(event, this.touches)
-		} else if (event.touches.length === 2 && this.props.isPinchable) {
-			this.isPinching = true
-			if (this.props.onTapEnd) this.props.onTapEnd(event, this.touches)
-			if (this.props.onPinchStart) this.props.onPinchStart(event, this.touches)
+			if (it.props.onTapStart) it.props.onTapStart(event, it.touches)
+		} else if (event.touches.length === 2 && it.props.isPinchable) {
+			it.isPinching = true
+			if (it.props.onTapEnd) it.props.onTapEnd(event, it.touches)
+			if (it.props.onPinchStart) it.props.onPinchStart(event, it.touches)
 		}
-	}
+	},
+	touchmove(event, it) {
+		if (it.props.isDisabled) return
 
-	onTouchMove() {
-		if (this.props.isDisabled) return
-
-		this.touches = makeTouches(event, this.touches)
-		if (this.isPinching) {
-			if (this.props.onPinchMove) this.props.onPinchMove(event, this.touches)
+		it.touches = makeTouches(event, it.touches)
+		if (it.isPinching) {
+			if (it.props.onPinchMove) it.props.onPinchMove(event, it.touches)
 		} else {
-			if (this.detectScroll()) {
-				this.endTouch()
+			if (detectScroll(it)) {
+				endTouch(it)
 				return
 			}
-			if (this.props.onTapMove) this.props.onTapMove(event, this.touches)
+			if (it.props.onTapMove) it.props.onTapMove(event, it.touches)
 		}
-	}
+	},
+	touchend(event, it) {
+		if (it.props.isDisabled) return
 
-	onTouchEnd(event) {
-		if (this.props.isDisabled) return
-
-		this.touches = makeTouches(event, this.touches)
+		it.touches = makeTouches(event, it.touches)
 		if (event.touches.length === 0) {
-			this.endTouch(event)
-		} else if (event.touches.length === 1 && this.isPinching) {
-			this.isPinching = false
-			if (this.props.onPinchEnd) this.props.onPinchEnd(event, this.touches)
-			if (this.props.onTapStart) this.props.onTapStart(event, this.touches)
+			endTouch(it, event)
+		} else if (event.touches.length === 1 && it.isPinching) {
+			it.isPinching = false
+			if (it.props.onPinchEnd) it.props.onPinchEnd(event, it.touches)
+			if (it.props.onTapStart) it.props.onTapStart(event, it.touches)
 		}
-	}
-
-	onFocus(event) {
-		if (this.props.isDisabled) return
-		if (!this.props.isFocusable || this.shouldPreventFocus) {
+	},
+	focus(event, it) {
+		if (it.props.isDisabled) return
+		if (!it.props.isFocusable || it.shouldPreventFocus) {
 			event.stopPropagation()
-			this.shouldPreventFocus = false
+			it.shouldPreventFocus = false
 		} else {
-			this.setTapState({ isFocused: true })
-			if (this.props.onFocus) this.props.onFocus(event)
+			setTapState(it, { isFocused: true })
+			if (it.props.onFocus) it.props.onFocus(event)
 		}
-	}
-
-	onBlur(event) {
-		if (this.props.isDisabled) return
-		this.setTapState({ isFocused: false })
-		if (this.props.onBlur) this.props.onBlur(event)
-	}
-
-	onKeyDown(event) {
-		const { onTap, onTapStart, onTapEnd } = this.props
-		const { isFocused } = this.state.tapState
+	},
+	blur(event, it) {
+		if (it.props.isDisabled) return
+		setTapState(it, { isFocused: false })
+		if (it.props.onBlur) it.props.onBlur(event)
+	},
+	keydown(event, it) {
+		const { onTap, onTapStart, onTapEnd } = it.props
+		const { isFocused } = it.state.tapState
 
 		if (isFocused && event.keyCode === ENTER_KEYCODE) {
-			this.setTapState({ isPressed: true })
+			setTapState(it, { isPressed: true })
 			if (onTapStart) onTapStart(event)
 			if (onTap) onTap(event)
 			setTimeout(() => {
-				this.setTapState({ isPressed: false })
+				setTapState(it, { isPressed: false })
 				if (onTapEnd) onTapEnd(event)
 			}, 150)
 		}
+	},
+	click(event, it) {
+		if (it.elem.tagName === 'BUTTON' && event.detail === 0) return
+		if (it.props.isDisabled) return
+		if (it.props.onTap) it.props.onTap(event)
 	}
+}
 
-	onClick(event) {
-		if (this.props.isDisabled) return
-		if (this.props.onTap) this.props.onTap(event)
-	}
+const setListeners = (it) => {
+	Object.entries(handlers).forEach(([name, handler]) =>
+		it.elem.addEventListener(name, (event) => handler(event, it))
+	)
+}
 
-	onDragStart() {
-		this.setTapState({ isHovered: false, isPressed: false })
-	}
+const setAttributes = (it) => {
+	const { isDisabled, tabIndex, isFocusable } = it.props
 
-	setTapState(tapState) {
-		if (tapState.isPressed && (this.props.preventFocusOnTap || this.isTouched)) {
-			this.shouldPreventFocus = true
-		}
+	if (isDisabled) it.elem.setAttribute('disabled', 'disabled')
+	else it.elem.removeAttribute('disabled')
 
-		const nextTapState = { ...this.state.tapState, ...tapState }
-		this.setState({ tapState: nextTapState })
-		if (this.props.onChangeTapState) this.props.onChangeTapState(nextTapState)
-	}
+	if (isFocusable && !isDisabled) it.elem.setAttribute('tabindex', tabIndex)
+	else it.elem.removeAttribute('tabindex')
+}
 
-	setAttributes(elem) {
-		const { isDisabled, tabIndex, isFocusable } = this.props
-
-		if (isDisabled) elem.setAttribute('disabled', 'disabled')
-		else elem.removeAttribute('disabled')
-
-		elem.setAttribute('tabindex', isFocusable && !isDisabled ? tabIndex : '-1')
-	}
-
-	bindHandlers(elem) {
-		Object.entries(this.handlers).forEach(([name, handler]) =>
-			elem.addEventListener(name, handler)
-		)
-	}
-
-	endTouch(event) {
-		this.isTouched = false
-		this.setTapState({ isHovered: false, isPressed: false })
-		if (this.isPinching) {
-			if (this.props.onPinchEnd) this.props.onPinchEnd(event, this.touches)
-		} else if (this.props.onTapEnd) {
-			this.props.onTapEnd(event, this.touches)
-		}
-	}
-
-	initScrollDetection() {
-		this.scrollPos = { top: 0, left: 0 }
-		this.scrollParents = []
-		let node = ReactDOM.findDOMNode(this)
-		while (node) {
-			if (
-				node.scrollHeight > node.offsetHeight ||
-				node.scrollWidth > node.offsetWidth
-			) {
-				this.scrollParents.push(node)
-				this.scrollPos.top += node.scrollTop
-				this.scrollPos.left += node.scrollLeft
+const Taply = forwardRef((props, ref) => {
+	const it = useIt({
+		initialState: {
+			tapState: {
+				isPressed: false,
+				isHovered: false,
+				isFocused: false
 			}
-			node = node.parentNode
+		},
+		initialCtx: () => ({
+			elem: undefined,
+			touches: [],
+			isTouched: false,
+			// Focus is prevented on click when `preventFocusOnTap` if `true`
+			// and always prevented on touch
+			shouldPreventFocus: false,
+			// Ignore mouse events on touching because mousedown happens after touchend
+			shouldIgnoreMouseEvents: false,
+			unmounted: false // TODO test
+		}),
+		props
+	})
+
+	const elemRef = useRef()
+
+	useEffect(() => {
+		if (it.elem !== elemRef.current) {
+			it.elem = elemRef.current
+			if (it.elem instanceof Element) {
+				setListeners(it)
+				setAttributes(it)
+			}
+		} else {
+			setAttributes(it)
 		}
-	}
+	}, [elemRef.current, props.isDisabled])
 
-	detectScroll() {
-		const currentScrollPos = { top: 0, left: 0 }
-		this.scrollParents.forEach(elem => {
-			currentScrollPos.top += elem.scrollTop
-			currentScrollPos.left += elem.scrollLeft
-		})
-		return (
-			currentScrollPos.top !== this.scrollPos.top ||
-			currentScrollPos.left !== this.scrollPos.left
-		)
-	}
+	useImperativeHandle(
+		ref,
+		() => ({
+			focus() {
+				if (it.elem instanceof Element) it.elem.focus()
+			}
+		}),
+		[]
+	)
 
-	focus() {
-		ReactDOM.findDOMNode(this).focus()
+	if (typeof props.children === 'function') {
+		return props.children(it.state.tapState, elemRef)
+	} else {
+		return cloneElementWithRef(props.children, { ref: elemRef })
 	}
+})
 
-	render() {
-		const { children } = this.props
-		return typeof children === 'function'
-			? children(this.state.tapState)
-			: children
-	}
+Taply.propTypes = {
+	children: PropTypes.oneOfType([PropTypes.element, PropTypes.func]).isRequired,
+	onTap: PropTypes.func,
+	onChangeTapState: PropTypes.func,
+	onTapStart: PropTypes.func,
+	onTapMove: PropTypes.func,
+	onTapEnd: PropTypes.func,
+	onPinchStart: PropTypes.func,
+	onPinchMove: PropTypes.func,
+	onPinchEnd: PropTypes.func,
+	onFocus: PropTypes.func,
+	onBlur: PropTypes.func,
+	isDisabled: PropTypes.bool,
+	isPinchable: PropTypes.bool,
+	isFocusable: PropTypes.bool,
+	tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+	preventFocusOnTap: PropTypes.bool
+}
+
+Taply.defaultProps = {
+	isFocusable: true,
+	isPinchable: false,
+	tabIndex: 0,
+	preventFocusOnTap: true
 }
 
 export default Taply

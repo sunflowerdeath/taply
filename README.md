@@ -17,7 +17,7 @@ npm install taply
 ## Example
 
 ```js
-import Taply from 'taply/lib/new'
+import Taply from 'taply'
 
 const tappableElement = (
     <Taply
