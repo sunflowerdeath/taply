@@ -1,12 +1,13 @@
 {
   "name": "taply",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
     "example": "gnoll start -e ./src/example/index.js --html ./src/example/index.html",
-    "build_example": "gnoll build -e ./src/example/index.js --html ./src/example/index.html",
-    "build": "gnoll lib"
+    "build-example": "gnoll build -e ./src/example/index.js --html ./src/example/index.html",
+    "build": "gnoll lib",
+    "prepublishOnly": "npm run build"
   },
   "author": "sunflowerdeath",
   "license": "Unlicense",
