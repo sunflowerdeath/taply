@@ -6,9 +6,9 @@ import { useIt, cloneElementWithRef } from './utils'
 const ENTER_KEYCODE = 13
 
 const makeTouches = (event, prevTouches) =>
-	Array.from(event.targetTouches).map((touch) => {
+	Array.from(event.targetTouches).map(touch => {
 		const { clientX: x, clientY: y, identifier } = touch
-		const prevTouch = prevTouches.find((t) => t.identifier === identifier)
+		const prevTouch = prevTouches.find(t => t.identifier === identifier)
 		if (prevTouch) {
 			return { ...prevTouch, x, y, dx: x - prevTouch.x0, dy: y - prevTouch.y0 }
 		}
@@ -64,7 +64,7 @@ const onMouseMove = (event, it) => {
 	}
 }
 
-const initScrollDetection = (it) => {
+const initScrollDetection = it => {
 	it.scrollPos = { top: 0, left: 0 }
 	it.scrollParents = []
 	let node = it.elem
@@ -81,9 +81,9 @@ const initScrollDetection = (it) => {
 	}
 }
 
-const detectScroll = (it) => {
+const detectScroll = it => {
 	const currentScrollPos = { top: 0, left: 0 }
-	it.scrollParents.forEach((elem) => {
+	it.scrollParents.forEach(elem => {
 		currentScrollPos.top += elem.scrollTop
 		currentScrollPos.left += elem.scrollLeft
 	})
@@ -121,8 +121,8 @@ const handlers = {
 			return
 		}
 		if (event.button !== 0) return
-		it.mouseUpListener = (e) => onMouseUp(e, it)
-		it.mouseMoveListener = (e) => onMouseMove(e, it)
+		it.mouseUpListener = e => onMouseUp(e, it)
+		it.mouseMoveListener = e => onMouseMove(e, it)
 		document.addEventListener('mouseup', it.mouseUpListener)
 		document.addEventListener('mousemove', it.mouseMoveListener)
 		setTapState(it, { isPressed: true })
@@ -177,7 +177,9 @@ const handlers = {
 	},
 	focus(event, it) {
 		if (it.props.isDisabled) return
-		if (!it.props.isFocusable || it.shouldPreventFocus) {
+		// When focus somehow happened, but it should not
+		if (it.props.shouldSetAttributes && !it.props.isFocusable) return
+		if (it.shouldPreventFocus) {
 			event.stopPropagation()
 			it.shouldPreventFocus = false
 		} else {
@@ -211,13 +213,13 @@ const handlers = {
 	}
 }
 
-const setListeners = (it) => {
+const setListeners = it => {
 	Object.entries(handlers).forEach(([name, handler]) =>
-		it.elem.addEventListener(name, (event) => handler(event, it))
+		it.elem.addEventListener(name, event => handler(event, it))
 	)
 }
 
-const setAttributes = (it) => {
+const setAttributes = it => {
 	const { isDisabled, tabIndex, isFocusable } = it.props
 
 	if (isDisabled) it.elem.setAttribute('disabled', 'disabled')
@@ -252,17 +254,20 @@ const Taply = forwardRef((props, ref) => {
 
 	const elemRef = useRef()
 
-	useEffect(() => {
-		if (it.elem !== elemRef.current) {
-			it.elem = elemRef.current
-			if (it.elem instanceof Element) {
-				setListeners(it)
-				setAttributes(it)
+	useEffect(
+		() => {
+			if (it.elem !== elemRef.current) {
+				it.elem = elemRef.current
+				if (it.elem instanceof Element) {
+					setListeners(it)
+					if (props.shouldSetAttributes) setAttributes(it)
+				}
+			} else {
+				if (props.shouldSetAttributes) setAttributes(it)
 			}
-		} else {
-			setAttributes(it)
-		}
-	}, [elemRef.current, props.isDisabled])
+		},
+		[elemRef.current, props.isDisabled]
+	)
 
 	useImperativeHandle(
 		ref,
@@ -295,16 +300,18 @@ Taply.propTypes = {
 	onBlur: PropTypes.func,
 	isDisabled: PropTypes.bool,
 	isPinchable: PropTypes.bool,
+	preventFocusOnTap: PropTypes.bool,
+	shouldSetAttributes: PropTypes.bool,
 	isFocusable: PropTypes.bool,
-	tabIndex: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-	preventFocusOnTap: PropTypes.bool
+	tabIndex: PropTypes.number
 }
 
 Taply.defaultProps = {
+	shouldSetAttributes: true,
 	isFocusable: true,
-	isPinchable: false,
 	tabIndex: 0,
-	preventFocusOnTap: true
+	preventFocusOnTap: true,
+	isPinchable: false
 }
 
 export default Taply

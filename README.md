@@ -102,3 +102,14 @@ HTML `tabindex` attribute.
 Type: `bool`
 <br>
 Default: `true`
+
+### shouldSetAttributes
+Type: `bool`
+<br>
+Default: `true`
+
+Taply sets `tabIndex` and `disabled` attributes on the html-element.
+When you have multiple nested `Taply` components, it is ambigious which one
+should control attributes, so you can disable it.
+
+
