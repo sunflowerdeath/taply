@@ -247,7 +247,8 @@ const Taply = forwardRef((props, ref) => {
 			shouldPreventFocus: false,
 			// Ignore mouse events on touching because mousedown happens after touchend
 			shouldIgnoreMouseEvents: false,
-			unmounted: false // TODO test
+			unmounted: false, // TODO test
+			scrollParents: []
 		}),
 		props
 	})
